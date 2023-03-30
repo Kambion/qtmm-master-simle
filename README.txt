@@ -1,3 +1,5 @@
+This project is modification of https://github.com/csete/qtmm
+
 1. About qtmm AFSK decoder
 
 Qtmm is a very simple AFSK1200 decoder that uses the soundcard as input device.
