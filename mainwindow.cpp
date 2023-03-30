@@ -56,7 +56,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(audioBuffer, SIGNAL(newData(float*,int)), this, SLOT(samplesReceived(float*,int)));
 
     /* initialise decoders */
-    afsk12 = new CAfsk12(ui->comSelect, ui->comOpen);
+    afsk12 = new CAfsk12(ui->comSelect, ui->comOpen, ui->statusLabel);
 
     connect(afsk12, SIGNAL(newMessage(QString)), ui->textView, SLOT(appendPlainText(QString)));
 
@@ -308,4 +308,28 @@ void MainWindow::on_actionAboutQt_triggered()
 void MainWindow::on_comOpen_clicked()
 {
     afsk12->openPort();
+}
+
+void MainWindow::on_filterCSBox_toggled(bool checked)
+{
+    ui->callsignVal->setEnabled(checked);
+    ui->setFilterButton->setEnabled(checked);
+    ui->filterVal->setEnabled(checked);
+    ui->label_5->setEnabled(checked);
+    if(!checked){
+        ui->filterVal->setText("NONE");
+    }
+}
+
+void MainWindow::on_setFilterButton_clicked()
+{
+    QString value = ui->callsignVal->text();
+    if(value.length() > 0){
+        afsk12->setFilter(true, value);
+        ui->filterVal->setText(value);
+    }
+    else{
+        afsk12->setFilter(false);
+        ui->filterVal->setText("NONE");
+    }
 }

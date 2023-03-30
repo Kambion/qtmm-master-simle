@@ -38,6 +38,12 @@ private slots:
 
     void on_comOpen_clicked();
 
+    void on_filterCSBox_toggled(bool checked);
+
+    void on_pushButton_clicked();
+
+    void on_setFilterButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     QLabel     *inputLabel;

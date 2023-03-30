@@ -31,10 +31,14 @@
 
 
 
-CAfsk12::CAfsk12(QComboBox *c, QPushButton *openButton, QObject *parent) : QObject(parent)
+CAfsk12::CAfsk12(QComboBox *c, QPushButton *openButton, QLabel *statusLabel, QObject *parent) : QObject(parent)
 {
     combo = c;
+    filterEnabled = false;
+    filterValue = "";
     this->openButton = openButton;
+    this->statusLabel = statusLabel;
+    statusLabel->setStyleSheet("QLabel { color : red; }");
     Q_FOREACH(QSerialPortInfo port, QSerialPortInfo::availablePorts()) {
         //window->ui->comSelect.addItem(port.portName());
         combo->addItem(port.portName());
@@ -234,6 +238,7 @@ static inline int check_crc_ccitt(const unsigned char *buf, int cnt)
 void CAfsk12::ax25_disp_packet(unsigned char *bp, unsigned int len)
 {
     QString message;
+    QString senderCallsign = "";
     unsigned char v1=1,cmd=0;
     unsigned char i,j;
 
@@ -318,10 +323,12 @@ void CAfsk12::ax25_disp_packet(unsigned char *bp, unsigned int len)
         verbprintf(0, "AFSK1200: fm ");
         message.append(QString("%1$ fm ").arg(time.toString("hh:mm:ss")));
 
-        for(i = 7; i < 13; i++)
+
+        for(i = 7; i < 13; i++)  //SENDER CALLSIGN
             if ((bp[i] &0xfe) != 0x40) {
                 verbprintf(0, "%c",bp[i] >> 1);
                 message.append(QChar(bp[i] >> 1));
+                senderCallsign.append(QChar(bp[i] >> 1));
             }
 
         verbprintf(0, "-%u to ",(bp[13] >> 1) & 0xf);
@@ -470,12 +477,26 @@ void CAfsk12::ax25_disp_packet(unsigned char *bp, unsigned int len)
     finished:
     if (message.size() > 0) {
         message.append("\n");
-        //Writing message to Serial
+        qDebug() << "Message callsign: " << senderCallsign << '\n';
+        if(!filterEnabled)
+            emitMessage(message);
+        else if(filterValue == senderCallsign)
+            emitMessage(message);
+    }
+}
+void CAfsk12::emitMessage(QString message){
+    if(isCOMOpen){ //Writing message to Serial
+
         const char* data = message.toStdString().c_str();
         serial.write(data);
-        //*************************
-        emit newMessage(message);
-    }
+
+    } //*************************
+    emit newMessage(message);
+}
+
+void CAfsk12::setFilter(bool state, QString value){
+    filterEnabled = state;
+    filterValue = value;
 }
 
 void CAfsk12::openPort(){
@@ -485,16 +506,22 @@ void CAfsk12::openPort(){
         serial.open(QIODevice::ReadWrite);
         if(serial.isOpen()){
             openButton->setText("Close");
+            combo->setEnabled(false);
+            statusLabel->setText("OPEN");
+            statusLabel->setStyleSheet("QLabel { color : green; }");
             isCOMOpen = true;
-            qDebug() << "COM opened";
         }else{
             qDebug() << "Error opening COM";
+            statusLabel->setText("ERROR");
+            statusLabel->setStyleSheet("QLabel { color : red; }");
         }
     }else{
         serial.close();
         openButton->setText("Open");
+        combo->setEnabled(true);
+        statusLabel->setText("CLOSED");
+        statusLabel->setStyleSheet("QLabel { color : red; }");
         isCOMOpen = false;
-        qDebug() << "COM closed";
     }
 }
 

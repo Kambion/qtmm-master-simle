@@ -29,6 +29,7 @@
 #include <QComboBox>
 #include <QMainWindow>
 #include <QPushButton>
+#include <QLabel>
 
 extern const float costabf[0x400];
 #define COS(x) costabf[(((x)>>6)&0x3ffu)]
@@ -154,13 +155,14 @@ class CAfsk12 : public QObject
 {
     Q_OBJECT
 public:
-    CAfsk12(QComboBox *c, QPushButton *openButton, QObject *parent = 0);
+    CAfsk12(QComboBox *c, QPushButton *openButton, QLabel *statusLabel, QObject *parent = 0);
     ~CAfsk12();
 
     void demod(float *buffer, int length);
     void reset();
 
     void openPort();
+    void setFilter(bool state, QString value = "");
 
 signals:
     void newMessage(const QString &message);
@@ -171,6 +173,9 @@ private:
     QSerialPort serial;
     QComboBox *combo;
     QPushButton *openButton;
+    QString filterValue;
+    bool filterEnabled;
+    QLabel *statusLabel;
     bool isCOMOpen = false;
     float corr_mark_i[CORRLEN];
     float corr_mark_q[CORRLEN];
@@ -179,6 +184,7 @@ private:
 
     struct demod_state *state;
 
+    void emitMessage(QString message);
 
     /* HDLC functions */
     void hdlc_init(struct demod_state *s);
